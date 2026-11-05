@@ -1,0 +1,8 @@
+# ESP-IDF build artifacts
+esp32/build/
+esp32-probe/build/
+
+# OS / editor noise
+.DS_Store
+*.swp
+*~
