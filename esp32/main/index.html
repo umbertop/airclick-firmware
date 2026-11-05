@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AirClick</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#131722; --panel2:#1a2030; --border:#252d3f;
+    --fg:#e8ecf4; --muted:#8b96aa; --accent:#4f8cff; --accent-h:#3a6fd8;
+    --ok:#2ecc71; --warn:#f5a623; --err:#e5534b; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg);-webkit-font-smoothing:antialiased}
+  .bar{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border)}
+  .bar h1{font-size:18px;margin:0;font-weight:600}
+  .bar .ver{color:var(--muted);font-size:12px}
+  nav{display:flex;gap:4px;padding:10px 18px;background:#0e1220;border-bottom:1px solid var(--border)}
+  nav button{background:none;border:none;color:var(--muted);padding:9px 16px;border-radius:9px;cursor:pointer;font-size:14px;font-weight:500}
+  nav button.active{background:var(--accent);color:#fff}
+  main{padding:20px;max-width:860px;margin:0 auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+  .card h2{font-size:13px;margin:0 0 14px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+  .stat{font-size:24px;font-weight:600}
+  .stat small{font-size:12px;color:var(--muted);font-weight:400;display:block;margin-top:2px}
+  .muted{color:var(--muted);font-size:13px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+  .tag{display:inline-block;padding:3px 9px;border-radius:6px;font-size:12px;font-weight:500;background:#232b3b}
+  .tag.on{background:rgba(46,204,113,.15);color:var(--ok)}
+  .tag.off{background:rgba(229,83,75,.15);color:var(--err)}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#1c2332;color:var(--fg);padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:500}
+  .btn:hover{background:#232c40}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:var(--accent-h)}
+  .btn.danger{color:#ffb3ad}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.sm{padding:5px 10px;font-size:12.5px}
+  input,select{background:#0d1119;border:1px solid var(--border);color:var(--fg);padding:9px 11px;border-radius:9px;font-size:14px;width:100%}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1;min-width:120px}
+  .events{max-height:280px;overflow-y:auto}
+  .event{display:flex;justify-content:space-between;align-items:center;padding:9px 2px;border-bottom:1px solid #1c2231;font-size:13.5px}
+  .toast{position:fixed;bottom:18px;right:18px;background:var(--panel2);border:1px solid var(--border);padding:12px 18px;border-radius:11px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:99;max-width:80vw}
+  .hidden{display:none}
+  .pill{font-family:ui-monospace,Menlo,monospace;background:#0d1119;border:1px dashed var(--accent);border-radius:10px;padding:12px;text-align:center;font-size:16px;letter-spacing:.04em;color:var(--accent);margin:8px 0}
+  .spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:7px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+  @media(max-width:620px){.cols{grid-template-columns:1fr}}
+  .empty{padding:22px;text-align:center;color:var(--muted)}
+  .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  /* button cards (mobile-friendly) */
+  .btn-card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+  .btn-card .top{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+  .btn-card .id{color:var(--muted);font-family:ui-monospace,Menlo,monospace;font-size:12.5px;margin-bottom:10px;word-break:break-all}
+  .btn-card .mid{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  .btn-card .mid select{flex:1;min-width:100px}
+  .btn-card .actions{display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+<div class="bar"><h1>AirClick</h1><span class="ver" id="ver"></span></div>
+<nav>
+  <button data-v="dash" class="active">Dashboard</button>
+  <button data-v="buttons">Buttons</button>
+  <button data-v="settings">Settings</button>
+</nav>
+<main>
+  <section id="v-dash">
+    <div class="grid">
+      <div class="card">
+        <h2>Wi-Fi</h2>
+        <div class="stat" id="d-wifi-mode">—</div>
+        <div class="muted" id="d-wifi-ssid">—</div>
+        <div class="muted mono" id="d-wifi-ip">—</div>
+      </div>
+      <div class="card"><h2>Buttons</h2><div class="stat" id="d-count">—</div></div>
+      <div class="card"><h2>Pairing</h2><div class="stat" id="d-pairing">—</div></div>
+      <div class="card"><h2>Output</h2><div class="stat" id="d-output">—</div></div>
+    </div>
+    <div class="card">
+      <h2>Recent events</h2>
+      <div class="events" id="d-events"><div class="empty">No events yet — press a button or use "Test".</div></div>
+    </div>
+  </section>
+
+  <section id="v-buttons" class="hidden">
+    <div class="card">
+      <h2>Pair a wireless button</h2>
+      <div id="pair-idle">
+        <button class="btn primary" id="pair-start">＋ Start pairing</button>
+        <span class="muted" style="margin-left:10px">then press the wireless button</span>
+        <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+          <label>Or add manually</label>
+          <div class="row">
+            <input class="grow" id="manual-id" placeholder="Button ID (e.g. FLY12345678)">
+            <input class="grow" id="manual-name" placeholder="Name">
+            <button class="btn" id="manual-add">Add</button>
+          </div>
+        </div>
+      </div>
+      <div id="pair-active" class="hidden">
+        <p class="muted"><span class="spinner"></span>Listening for a button… press it now.</p>
+        <div class="pill" id="pair-id">— waiting —</div>
+        <div class="row">
+          <input class="grow" id="pair-name" placeholder="Button name (e.g. Kitchen light)">
+          <button class="btn primary" id="pair-add" disabled>Add button</button>
+          <button class="btn" id="pair-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Paired buttons</h2>
+      <div id="btns"></div>
+    </div>
+  </section>
+
+  <section id="v-settings" class="hidden">
+    <div class="card">
+      <h2>Output</h2>
+      <label>Send button signals to</label>
+      <select id="c-output">
+        <option value="0">Home Assistant (MQTT)</option>
+        <option value="1">STM32 (serial)</option>
+      </select>
+      <p class="muted" style="margin:8px 0 0">"STM32" forwards events over the serial port (UART1, GPIO4 TX / GPIO5 RX, 115200 baud) for the STM32 to act on.</p>
+    </div>
+    <div class="card">
+      <h2>Wi-Fi</h2>
+      <div class="cols">
+        <div><label>Mode</label><select id="c-isap"><option value="1">Access point (this device)</option><option value="0">Join existing Wi-Fi</option></select></div>
+        <div><label>AP name (SSID)</label><input id="c-ap-ssid"></div>
+        <div><label>AP password</label><input id="c-ap-pass" placeholder="(empty = open)"></div>
+        <div id="sta-ssid-field"><label>Wi-Fi SSID</label><input id="c-ssid"></div>
+        <div id="sta-pass-field"><label>Wi-Fi password</label><input id="c-pass" type="password"></div>
+      </div>
+      <div class="muted" style="margin-top:12px">Current IP <span class="mono" id="c-ip">—</span></div>
+    </div>
+    <div class="card" id="mqtt-card">
+      <h2>MQTT (Home Assistant)</h2>
+      <div class="cols">
+        <div><label>Broker host</label><input id="c-mqtt-host"></div>
+        <div><label>Port</label><input id="c-mqtt-port" type="number"></div>
+        <div><label>Username</label><input id="c-mqtt-user"></div>
+        <div><label>Password</label><input id="c-mqtt-pass" type="password"></div>
+        <div><label>Topic prefix</label><input id="c-mqtt-topic"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>System</h2>
+      <div class="muted" style="margin-bottom:12px">MAC address <span class="mono" id="c-mac">—</span></div>
+      <div class="row">
+        <button class="btn" id="s-reboot">Restart</button>
+        <button class="btn danger" id="s-factory">Factory reset</button>
+      </div>
+    </div>
+    <div class="card">
+      <button class="btn primary" id="c-save" style="width:100%;justify-content:center">Save settings</button>
+    </div>
+  </section>
+</main>
+<div class="toast hidden" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const api=async(p,o)=>{const r=await fetch(p,o);return r.json().catch(()=>({}));};
+const toast=m=>{$('toast').textContent=m;$('toast').classList.remove('hidden');setTimeout(()=>$('toast').classList.add('hidden'),2600);};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// show/hide MQTT section based on the output mode
+let outMode=0;
+function updateOutputUI(){
+  outMode=parseInt($('c-output').value)||0;
+  $('mqtt-card').classList.toggle('hidden', outMode!==0);
+}
+// show/hide the "join existing Wi-Fi" (STA) fields based on the mode.
+// The AP stays on in both modes, so its fields are always shown.
+function updateWifiUI(){
+  const isap=$('c-isap').value==='1';
+  $('sta-ssid-field').classList.toggle('hidden', isap);
+  $('sta-pass-field').classList.toggle('hidden', isap);
+}
+
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
+  $('v-'+b.dataset.v).classList.remove('hidden');
+}));
+
+let btnsCache=[];
+
+async function status(){
+  try{
+    const s=await api('/api/status');
+    $('ver').textContent='v'+s.firmware;
+    $('d-wifi-mode').textContent=s.wifi_mode||'—';
+    $('d-wifi-ssid').textContent=s.wifi_ssid||'';
+    $('d-wifi-ip').textContent=s.ip||'—';
+    $('c-ip').textContent=s.ip||'—';
+    $('d-count').textContent=s.paired??'—';
+    $('d-pairing').textContent=s.pairing?'listening':'idle';
+    $('d-output').textContent=s.output_mode===undefined?'—':(s.output_mode===1?'STM32':'MQTT');
+    const ev=$('d-events');
+    if(s.events&&s.events.length){
+      ev.innerHTML=s.events.map(e=>`<div class="event"><span><b>${esc(e.id)}</b> → GPIO${e.gpio}</span><span class="tag ${e.state==='ON'?'on':'off'}">${e.event} ${e.state}</span></div>`).join('');
+    }else ev.innerHTML='<div class="empty">No events yet — press a button or use "Test".</div>';
+  }catch(e){}
+}
+
+async function loadButtons(){
+  btnsCache=await api('/api/buttons');
+  const t=$('btns');
+  if(!btnsCache.length){t.innerHTML='<div class="empty">No buttons paired yet.</div>';return;}
+  const used=new Set(btnsCache.map(b=>b.gpio));
+  t.innerHTML=btnsCache.map(b=>{
+    const opts=[0,1,2,3,4,5,6,7,8,9].filter(g=>g===b.gpio||!used.has(g))
+      .map(g=>`<option value="${g}" ${g===b.gpio?'selected':''}>GPIO${g}</option>`).join('');
+    return `<div class="btn-card">
+      <div class="top"><input value="${esc(b.name)}" data-id="${b.id}" data-f="name" placeholder="Name"></div>
+      <div class="id">${esc(b.id)}</div>
+      <div class="mid">
+        <select data-id="${b.id}" data-f="gpio">${opts}</select>
+        <span class="tag ${b.enabled?'on':'off'}">${b.enabled?'enabled':'disabled'}</span>
+      </div>
+      <div class="actions">
+        <button class="btn sm" data-test="${b.id}">Test</button>
+        <button class="btn sm danger" data-del="${b.id}">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+$('btns').addEventListener('change',async e=>{
+  const el=e.target;const id=el.dataset.id,f=el.dataset.f;
+  if(!id)return;
+  const b=btnsCache.find(x=>x.id===id);if(!b)return;
+  b[f]=f==='gpio'?parseInt(el.value):el.value;
+  await api('/api/buttons',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+  toast('Saved');loadButtons();
+});
+$('btns').addEventListener('click',async e=>{
+  const id=e.target.dataset.test;
+  if(id){await api('/api/buttons/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});toast('Test event sent');return;}
+  const d=e.target.dataset.del;
+  if(d){if(!confirm('Remove this button?'))return;await api('/api/buttons/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:d})});toast('Removed');loadButtons();}
+});
+
+// pairing
+let pt=null;
+$('pair-start').onclick=async()=>{await api('/api/pairing/start',{method:'POST'});$('pair-idle').classList.add('hidden');$('pair-active').classList.remove('hidden');$('pair-id').textContent='— waiting —';$('pair-add').disabled=true;pt=setInterval(poll,700);};
+$('manual-add').onclick=async()=>{
+  const id=$('manual-id').value.trim(), name=$('manual-name').value.trim();
+  if(!id)return toast('Enter a button ID');
+  const r=await api('/api/pairing/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,name})});
+  toast(r.msg||'Added');loadButtons();$('manual-id').value='';$('manual-name').value='';
+};
+$('pair-cancel').onclick=async()=>{await api('/api/pairing/cancel',{method:'POST'});stopPairing();};
+async function poll(){const s=await api('/api/pairing/status');if(!s.active){stopPairing();return;}if(s.id){$('pair-id').textContent=s.id;$('pair-add').disabled=false;}}
+function stopPairing(){clearInterval(pt);$('pair-active').classList.add('hidden');$('pair-idle').classList.remove('hidden');$('pair-name').value='';}
+$('pair-add').onclick=async()=>{
+  const name=$('pair-name').value.trim();
+  const r=await api('/api/pairing/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+  toast(r.msg||'Paired');stopPairing();loadButtons();
+};
+
+// settings
+async function loadConfig(){
+  const c=await api('/api/config');
+  $('c-output').value=c.output_mode??0;
+  $('c-isap').value=c.net.is_ap?'1':'0';
+  $('c-ap-ssid').value=c.net.ssid_ap;$('c-ap-pass').value=c.net.pass_ap;
+  $('c-ssid').value=c.net.ssid;$('c-pass').value=c.net.pass;
+  $('c-mqtt-host').value=c.mqtt.host;$('c-mqtt-port').value=c.mqtt.port;
+  $('c-mqtt-user').value=c.mqtt.user;$('c-mqtt-pass').value=c.mqtt.pass;$('c-mqtt-topic').value=c.mqtt.topic;
+  $('c-mac').textContent=c.mac||'—';
+  updateOutputUI();
+  updateWifiUI();
+}
+$('c-output').onchange=updateOutputUI;
+$('c-isap').onchange=updateWifiUI;
+$('c-save').onclick=async()=>{
+  const join=($('c-isap').value==='0') && $('c-ssid').value.trim()!=='';
+  const body={output_mode:parseInt($('c-output').value)||0,
+    net:{ssid:$('c-ssid').value,pass:$('c-pass').value,ssid_ap:$('c-ap-ssid').value,pass_ap:$('c-ap-pass').value,is_ap:$('c-isap').value==='1'},
+    mqtt:{host:$('c-mqtt-host').value,port:parseInt($('c-mqtt-port').value)||1883,user:$('c-mqtt-user').value,pass:$('c-mqtt-pass').value,topic:$('c-mqtt-topic').value}};
+  $('c-save').disabled=true;
+  await api('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  $('c-save').disabled=false;
+  if(join){
+    toast(`Connecting to ${$('c-ssid').value}…`);
+    await watchConnection();
+  }else{
+    toast('Settings saved');
+  }
+};
+
+async function watchConnection(){
+  for(let i=0;i<12;i++){
+    await new Promise(res=>setTimeout(res,1500));
+    const s=await api('/api/status');
+    $('c-ip').textContent=s.ip||'—';
+    if(s.wifi&&s.wifi.indexOf('STA')===0){
+      toast(`Connected — IP ${s.ip||''}`);
+      return;
+    }
+  }
+  toast('Could not connect — check Wi-Fi password');
+}
+$('s-reboot').onclick=async()=>{if(confirm('Restart the device?'))await api('/api/system/reboot',{method:'POST'});};
+$('s-factory').onclick=async()=>{if(confirm('Erase ALL settings and buttons? This cannot be undone.'))await api('/api/system/factory',{method:'POST'});};
+
+status();loadButtons();loadConfig();
+setInterval(status,2000);
+setInterval(loadButtons,5000);
+</script>
+</body>
+</html>
