@@ -2,6 +2,9 @@
 esp32/build/
 esp32-probe/build/
 
+# STM32 build artifacts
+stm32/build/
+
 # OS / editor noise
 .DS_Store
 *.swp
