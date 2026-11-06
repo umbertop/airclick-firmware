@@ -123,12 +123,15 @@ int output_publish_event(const button_event_t *ev)
     const char *type = event_name(ev);
 
     if (s_cfg.output_mode == OUTPUT_MODE_STM32) {
-        // Serial JSON line for the STM32.
-        char line[160];
-        snprintf(line, sizeof(line),
-                 "{\"id\":\"%s\",\"gpio\":%u,\"event\":\"%s\",\"state\":%u}",
-                 ev->button_id, ev->gpio, type, ev->state);
-        serial_send_line(line);
+        // Forward a wired-button-style "PBx" message so wireless buttons look
+        // identical to the STM32's own wired buttons on the USB-CDC stream.
+        // serial_send_line() appends '\n'; the STM32 bridge normalizes to "\r\n".
+        if (ev->event_type == EVENT_PRESS) {
+            char line[16];
+            snprintf(line, sizeof(line), "PB%d", ev->gpio);
+            serial_send_line(line);
+            ESP_LOGI(TAG, "serial TX (GPIO4, 115200): %s", line);
+        }
     } else {
         // MQTT for Home Assistant.
         char suffix[64];
